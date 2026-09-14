@@ -1,5 +1,4 @@
 [tools]
-chezscheme = "latest"
 java = "lts"
 clojure = "latest"
 maven = "latest"
