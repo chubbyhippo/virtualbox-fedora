@@ -3,6 +3,9 @@
 curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/heads/main/init.sh | sh
 ```
 
+If the above `curl` fails with an SSL/certificate error, your host likely runs Zscaler — see [Zscaler SSL on the host](#zscaler-ssl-on-the-host-optional) below before retrying.
+
+
 ## Connecting to the SSH server
 
 ### Option 1: VirtualBox NAT port forwarding
@@ -44,10 +47,31 @@ If the host does run Zscaler, TLS traffic from the VM may be intercepted and fai
 
 2. Set up a **VirtualBox shared folder** pointing at a directory containing both `zscaler-root-ca.crt` and `add-certs.sh` (e.g. this repo's checkout), and mount it in the VM (VM **Settings** > **Shared Folders**; enable **Auto-mount** if available).
 
+   Shared folders are only accessible to users in the `vboxsf` group. `init.sh` adds the current user to it automatically (a log out/reboot is needed afterwards to pick it up), but on a fresh VM before running `init.sh` you may need to do it manually first:
+   ```sh
+   sudo usermod -aG vboxsf $USER
+   ```
+   then log out and back in (or reboot) before accessing `/media/sf_*`.
+
 3. In the VM, run `add-certs.sh` directly from the shared folder — no `curl` involved:
    ```sh
    sh /media/sf_<share-name>/add-certs.sh
    ```
    This copies the cert into `/etc/pki/ca-trust/source/anchors/` and runs `update-ca-trust extract`.
 
-4. `curl` (and `init.sh`) now works normally.
+4. `curl` (and `init.sh`) now works normally. Continue with:
+   ```sh
+   curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/heads/main/init.sh | sh
+   ```
+
+### If `curl` can't reach GitHub at all (no shared folder yet)
+
+On a brand new VM you may not have a shared folder or Guest Additions set up yet, so you can't get `zscaler-root-ca.crt` or `add-certs.sh` onto the VM through `/media/sf_*`. In that case, download this repo directly onto the **host** and copy the whole checkout into the VM instead of relying on `curl`/GitHub raw links from inside the guest:
+
+1. On the host, clone or download this repo as a zip (browsers use the OS trust store, so Zscaler's cert works fine there).
+2. Copy the folder into the VM via a temporary shared folder, `scp`, or by attaching it as an ISO/drag-and-drop (if Guest Additions are already installed).
+3. Run the scripts locally from that copy:
+   ```sh
+   sh add-certs.sh   # imports the Zscaler root CA
+   sh init.sh        # curl now works; runs the rest of the setup
+   ```
