@@ -37,7 +37,7 @@ ssh <user>@<vm-ip>
 
 ## Zscaler SSL on the host (optional)
 
-Skip this section entirely if the host doesn't run Zscaler Client Connector — `init.sh` doesn't touch certs and works as-is.
+Skip this section entirely if the host doesn't run Zscaler Client Connector — the cert-detection in `init.sh` below is a no-op when no `zscaler-root-ca.crt` is found, so nothing changes for you.
 
 If the host does run Zscaler, TLS traffic from the VM may be intercepted and fail certificate validation — including `curl` itself, so `init.sh` can't even be downloaded that way until the cert is trusted. Import the Zscaler root CA into the VM **before running `init.sh`, without using curl**, via a shared folder.
 
@@ -47,7 +47,7 @@ If the host does run Zscaler, TLS traffic from the VM may be intercepted and fai
    ```
    This creates `zscaler-root-ca.crt` in the current directory.
 
-2. Set up a **VirtualBox shared folder** pointing at a directory containing both `zscaler-root-ca.crt` and `add-certs.sh` (e.g. this repo's checkout), and mount it in the VM (VM **Settings** > **Shared Folders**; enable **Auto-mount** if available).
+2. Set up a **VirtualBox shared folder** pointing at a directory containing `zscaler-root-ca.crt` plus this repo's `add-certs*.sh` scripts (e.g. this repo's checkout), and mount it in the VM (VM **Settings** > **Shared Folders**; enable **Auto-mount** if available).
 
    Shared folders are only accessible to users in the `vboxsf` group. `init.sh` adds the current user to it automatically (a log out/reboot is needed afterwards to pick it up), but on a fresh VM before running `init.sh` you may need to do it manually first:
    ```sh
@@ -55,16 +55,11 @@ If the host does run Zscaler, TLS traffic from the VM may be intercepted and fai
    ```
    then log out and back in (or reboot) before accessing `/media/sf_*`.
 
-3. In the VM, run `add-certs.sh` directly from the shared folder — no `curl` involved:
+3. Run `init.sh` **directly from the shared folder** (not piped from curl) — no network trust needed for this step, since it's a local file:
    ```sh
-   sh /media/sf_<share-name>/add-certs.sh
+   sh /media/sf_<share-name>/init.sh
    ```
-   This copies the cert into `/etc/pki/ca-trust/source/anchors/` and runs `update-ca-trust extract`.
-
-4. `curl` (and `init.sh`) now works normally. Continue with:
-   ```sh
-   curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/heads/main/init.sh | sh
-   ```
+   `init.sh` checks `/media/sf_*` and `/mnt/*` for `zscaler-root-ca.crt` at the very top and, if found, runs `add-certs.sh` itself before doing anything else that needs `curl` — so this one command replaces the old "run `add-certs.sh` by hand, then run `init.sh` via curl" two-step. It does the same auto-check again right after installing mise's tools, running `add-certs-jdk.sh` and `add-certs-npm.sh` too if the cert is present, so Maven/Gradle/npm trust it as well — see the sections below for what those two do on their own.
 
 ### Importing the root CA into the browser (Firefox)
 
@@ -80,7 +75,7 @@ Chrome/Chromium-based browsers on Fedora normally pick up the system trust store
 
 ### Importing the root CA for npm
 
-npm (and Node in general) has the same gap as Firefox — it doesn't consult the system trust store either, so `npm install` (used by [`init-el-extras.sh`](init-el-extras.sh) for the TypeScript/HTML language servers) fails under Zscaler interception even after `add-certs.sh` runs. From the shared folder, without curl:
+npm (and Node in general) has the same gap as Firefox — it doesn't consult the system trust store either, so `npm install` (used by [`init-el-extras.sh`](init-el-extras.sh) for the TypeScript/HTML language servers) fails under Zscaler interception even after `add-certs.sh` runs. `init.sh` runs this automatically once mise's Node is installed (see step 3 above); to run it by hand instead, from the shared folder:
 
 ```sh
 sh /media/sf_<share-name>/add-certs-npm.sh
@@ -90,7 +85,7 @@ This copies the cert to `~/.config/npm/zscaler-root-ca.crt` and runs `npm config
 
 ### Importing the root CA for the JDK
 
-mise's JDK (installed via `mise.toml`, not Fedora's system `java-*-openjdk`) ships its own bundled `cacerts` truststore, separate from the system trust store — the same gap as Firefox and npm, so Maven/Gradle dependency downloads fail under Zscaler interception even after `add-certs.sh` runs. From the shared folder, without curl:
+mise's JDK (installed via `mise.toml`, not Fedora's system `java-*-openjdk`) ships its own bundled `cacerts` truststore, separate from the system trust store — the same gap as Firefox and npm, so Maven/Gradle dependency downloads fail under Zscaler interception even after `add-certs.sh` runs. `init.sh` runs this automatically right after `mise install --yes` (see step 3 above); to run it by hand instead, from the shared folder:
 
 ```sh
 sh /media/sf_<share-name>/add-certs-jdk.sh
@@ -100,12 +95,11 @@ This resolves `JAVA_HOME` from `keytool` on PATH (mise's shims) and imports the 
 
 ### If `curl` can't reach GitHub at all (no shared folder yet)
 
-On a brand new VM you may not have a shared folder or Guest Additions set up yet, so you can't get `zscaler-root-ca.crt` or `add-certs.sh` onto the VM through `/media/sf_*`. In that case, download this repo directly onto the **host** and copy the whole checkout into the VM instead of relying on `curl`/GitHub raw links from inside the guest:
+On a brand new VM you may not have a shared folder or Guest Additions set up yet, so you can't get `zscaler-root-ca.crt` or the `add-certs*.sh` scripts onto the VM through `/media/sf_*`. In that case, download this repo directly onto the **host** and copy the whole checkout into the VM instead of relying on `curl`/GitHub raw links from inside the guest:
 
 1. On the host, clone or download this repo as a zip (browsers use the OS trust store, so Zscaler's cert works fine there).
 2. Copy the folder into the VM via a temporary shared folder, `scp`, or by attaching it as an ISO/drag-and-drop (if Guest Additions are already installed).
-3. Run the scripts locally from that copy:
+3. Put `zscaler-root-ca.crt` next to the copied `init.sh` (matching a `/media/sf_*` or `/mnt/*` path) and run it locally:
    ```sh
-   sh add-certs.sh   # imports the Zscaler root CA
-   sh init.sh        # curl now works; runs the rest of the setup
+   sh init.sh   # detects the cert, imports it, then runs the rest of the setup
    ```
