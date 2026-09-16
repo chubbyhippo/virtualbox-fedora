@@ -78,6 +78,16 @@ If the host does run Zscaler, TLS traffic from the VM may be intercepted and fai
 
 Chrome/Chromium-based browsers on Fedora normally pick up the system trust store automatically after `update-ca-trust extract`, so no separate import is needed there; if a Chromium-based browser still complains, import the same `.crt` file via its own `chrome://settings/certificates` (or `chrome://certificate-manager`) page the same way.
 
+### Importing the root CA for npm
+
+npm (and Node in general) has the same gap as Firefox — it doesn't consult the system trust store either, so `npm install` (used by [`init-el-extras.sh`](init-el-extras.sh) for the TypeScript/HTML language servers) fails under Zscaler interception even after `add-certs.sh` runs. From the shared folder, without curl:
+
+```sh
+sh /media/sf_<share-name>/add-certs-npm.sh
+```
+
+This copies the cert to `~/.config/npm/zscaler-root-ca.crt` and runs `npm config set cafile` to point at it, scoped to your npm user config — no reboot or new session needed.
+
 ### If `curl` can't reach GitHub at all (no shared folder yet)
 
 On a brand new VM you may not have a shared folder or Guest Additions set up yet, so you can't get `zscaler-root-ca.crt` or `add-certs.sh` onto the VM through `/media/sf_*`. In that case, download this repo directly onto the **host** and copy the whole checkout into the VM instead of relying on `curl`/GitHub raw links from inside the guest:

@@ -19,11 +19,6 @@ sudo dnf install -y emacs
 # init.el extras (language servers + debuggers)
 curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/heads/main/init-el-extras.sh | /usr/bin/env sh
 
-# kanata (Fedora has no official package — cargo, from mise's rust tool, builds it)
-export PATH="$HOME/.local/share/mise/shims:$PATH"
-command -v kanata >/dev/null 2>&1 || cargo install kanata
-curl -fsSL https://raw.githubusercontent.com/chubbyhippo/kanata-settings/refs/heads/main/fedora/install.sh | sh
-
 rpm -q jet-brains-mono-nerd-fonts >/dev/null 2>&1 || {
     sudo dnf copr enable -y aquacash5/nerd-fonts
     sudo dnf install -y jet-brains-mono-nerd-fonts
