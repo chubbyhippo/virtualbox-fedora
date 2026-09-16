@@ -12,6 +12,7 @@ sudo firewall-cmd --reload
 [ -x ~/.local/bin/mise ] || curl -fsSL https://mise.run | sh
 mkdir -p ~/.config/mise
 [ -f ~/.config/mise/config.toml ] || curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/heads/main/mise.toml -o ~/.config/mise/config.toml
+~/.local/bin/mise install --yes
 
 # init.el extras (language servers + debuggers)
 curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/heads/main/init-el-extras.sh | /usr/bin/env sh
