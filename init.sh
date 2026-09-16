@@ -22,3 +22,17 @@ if getent group vboxsf >/dev/null && ! id -nG "$USER" | grep -qw vboxsf; then
     sudo usermod -aG vboxsf "$USER"
     echo "Added $USER to vboxsf group. Log out and back in (or reboot) to access shared folders."
 fi
+
+rpm -q xlibre-xserver >/dev/null 2>&1 || {
+    sudo dnf copr enable -y @xlibre/xlibre-xserver
+    sudo dnf install -y xlibre-xserver xlibre-xf86-input-libinput --allowerasing
+}
+
+if [ -f /etc/gdm/custom.conf ] && ! grep -q '^WaylandEnable=false' /etc/gdm/custom.conf; then
+    if grep -q '^\[daemon\]' /etc/gdm/custom.conf; then
+        sudo sed -i '/^\[daemon\]/a WaylandEnable=false' /etc/gdm/custom.conf
+    else
+        printf '[daemon]\nWaylandEnable=false\n' | sudo tee -a /etc/gdm/custom.conf >/dev/null
+    fi
+    echo "Disabled Wayland in GDM so the X11Libre Xorg server is used by default. Reboot to apply."
+fi
