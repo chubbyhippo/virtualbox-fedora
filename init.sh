@@ -24,6 +24,9 @@ sudo firewall-cmd --reload
 mkdir -p ~/.config/mise
 [ -f ~/.config/mise/config.toml ] || curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/heads/main/mise.toml -o ~/.config/mise/config.toml
 ~/.local/bin/mise install --yes
+eval "$(~/.local/bin/mise activate bash)"
+
+[ -f ~/.bashrc ] && ! grep -qsF 'mise activate bash' ~/.bashrc && echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
 
 if zscaler_cert >/dev/null; then
     curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/heads/main/add-certs-jdk.sh | sh
