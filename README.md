@@ -59,7 +59,7 @@ If the host does run Zscaler, TLS traffic from the VM may be intercepted and fai
    ```sh
    sh /media/sf_<share-name>/init.sh
    ```
-   `init.sh` checks `/media/sf_*` and `/mnt/*` for `zscaler-root-ca.crt` at the very top and, if found, runs `add-certs.sh` itself before doing anything else that needs `curl` — so this one command replaces the old "run `add-certs.sh` by hand, then run `init.sh` via curl" two-step. It does the same auto-check again right after installing mise's tools, running `add-certs-jdk.sh` and `add-certs-npm.sh` too if the cert is present, so Maven/Gradle/npm trust it as well — see the sections below for what those two do on their own.
+   `init.sh` checks `/media/sf_*` and `/mnt/*` for `zscaler-root-ca.crt` at the very top and, if found, runs `add-certs.sh` itself before doing anything else that needs `curl` — so this one command replaces the old "run `add-certs.sh` by hand, then run `init.sh` via curl" two-step. It does the same auto-check again right after installing mise's tools, running `add-certs-jdk.sh`, `add-certs-npm.sh` and `add-certs-pip.sh` too if the cert is present, so Maven/Gradle/npm/pip trust it as well — see the sections below for what those do on their own.
 
 ### Importing the root CA into the browser (Firefox)
 
@@ -92,6 +92,16 @@ sh /media/sf_<share-name>/add-certs-jdk.sh
 ```
 
 This resolves `JAVA_HOME` from `keytool` on PATH (mise's shims) and imports the cert into `$JAVA_HOME/lib/security/cacerts` with the default `changeit` store password; safe to re-run, it skips the import if the alias is already there.
+
+### Importing the root CA for pip
+
+pip has the same gap as Firefox/npm/the JDK — it bundles its own `certifi` CA file rather than using the system trust store, so `pip install debugpy` (run by [`init-el-extras.sh`](init-el-extras.sh)) fails under Zscaler interception even after `add-certs.sh` runs. `init.sh` runs this automatically alongside the JDK/npm scripts (see step 3 above); to run it by hand instead, from the shared folder:
+
+```sh
+sh /media/sf_<share-name>/add-certs-pip.sh
+```
+
+This writes `cert = /etc/pki/tls/certs/ca-bundle.crt` into `~/.config/pip/pip.conf`, pointing pip at the same system bundle `add-certs.sh` already updated — no `PIP_CERT` env var needed for later pip installs. `go install` and mise's own downloads need nothing extra; both already read the system trust store.
 
 ### If `curl` can't reach GitHub at all (no shared folder yet)
 

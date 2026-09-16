@@ -28,6 +28,7 @@ mkdir -p ~/.config/mise
 if zscaler_cert >/dev/null; then
     curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/heads/main/add-certs-jdk.sh | sh
     curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/heads/main/add-certs-npm.sh | sh
+    curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/heads/main/add-certs-pip.sh | sh
 fi
 
 sudo dnf install -y emacs

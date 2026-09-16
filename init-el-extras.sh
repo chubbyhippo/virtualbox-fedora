@@ -29,6 +29,10 @@ fi
 
 # python: pylsp + debugpy for the system python (venv projects add their own
 # debugpy). debugpy isn't packaged in Fedora's repos, so pip installs it.
+# pip ignores the system trust store by default (bundles its own certifi CA
+# file), unlike curl/dnf/go — init.sh's add-certs-pip.sh already points pip's
+# own config at the system bundle before this script runs, if a Zscaler root
+# CA is present.
 sudo dnf install -y python3-lsp-server python3-pip
 python3 -m pip install --user --upgrade debugpy
 
