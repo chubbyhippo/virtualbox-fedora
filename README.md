@@ -5,8 +5,6 @@ curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/
 
 If the above `curl` fails with an SSL/certificate error, your host likely runs Zscaler — see [Zscaler SSL on the host](#zscaler-ssl-on-the-host-optional) below before retrying.
 
-`init.sh` also installs [XLibre](https://github.com/X11Libre/xserver) (a community fork of the X.Org server) from the unofficial `@xlibre/xlibre-xserver` Copr repo, and disables Wayland in GDM so it's used by default — see [XLibre X server](#xlibre-x-server-experimental) below for why and what it means for you.
-
 
 ## Connecting to the SSH server
 
@@ -89,20 +87,3 @@ On a brand new VM you may not have a shared folder or Guest Additions set up yet
    sh add-certs.sh   # imports the Zscaler root CA
    sh init.sh        # curl now works; runs the rest of the setup
    ```
-
-## XLibre X server (experimental)
-
-`init.sh` installs [XLibre](https://github.com/X11Libre/xserver), a community fork of the X.Org server, from the **unofficial, third-party** `@xlibre/xlibre-xserver` Copr repo:
-
-```sh
-sudo dnf copr enable -y @xlibre/xlibre-xserver
-sudo dnf install -y xlibre-xserver xlibre-xf86-input-libinput --allowerasing
-```
-
-It also disables Wayland in `/etc/gdm/custom.conf` (`WaylandEnable=false`) so GDM starts an X11 session — and therefore XLibre — by default, since VirtualBox's 3D acceleration (VMSVGA/`vboxvideo` + Mesa glamor) is far more stable under X11 than under Fedora's default Wayland/GNOME session.
-
-**Things to know before relying on this:**
-- This Copr repo is maintained by a third party, not Fedora or Red Hat, and is explicitly provided "as-is, untested." `init.sh` runs it with `--allowerasing`, so it obsoletes/replaces the stock `xorg-x11-server-Xorg` packages.
-- XLibre is a controversial fork born out of a dispute with the X.Org/freedesktop.org maintainers; it's actively developed but far less battle-tested than upstream X.Org.
-- A reboot (or at least logging out) is needed after `init.sh` runs for the GDM/Wayland change to take effect.
-- To go back to stock Fedora X.Org, re-enable `WaylandEnable` (remove the line or set it to `true`) in `/etc/gdm/custom.conf`, then `sudo dnf remove xlibre-xserver` (dnf will pull `xorg-x11-server-Xorg` back in via the Obsoletes/Provides).
