@@ -88,6 +88,16 @@ sh /media/sf_<share-name>/add-certs-npm.sh
 
 This copies the cert to `~/.config/npm/zscaler-root-ca.crt` and runs `npm config set cafile` to point at it, scoped to your npm user config — no reboot or new session needed.
 
+### Importing the root CA for the JDK
+
+mise's JDK (installed via `mise.toml`, not Fedora's system `java-*-openjdk`) ships its own bundled `cacerts` truststore, separate from the system trust store — the same gap as Firefox and npm, so Maven/Gradle dependency downloads fail under Zscaler interception even after `add-certs.sh` runs. From the shared folder, without curl:
+
+```sh
+sh /media/sf_<share-name>/add-certs-jdk.sh
+```
+
+This resolves `JAVA_HOME` from `keytool` on PATH (mise's shims) and imports the cert into `$JAVA_HOME/lib/security/cacerts` with the default `changeit` store password; safe to re-run, it skips the import if the alias is already there.
+
 ### If `curl` can't reach GitHub at all (no shared folder yet)
 
 On a brand new VM you may not have a shared folder or Guest Additions set up yet, so you can't get `zscaler-root-ca.crt` or `add-certs.sh` onto the VM through `/media/sf_*`. In that case, download this repo directly onto the **host** and copy the whole checkout into the VM instead of relying on `curl`/GitHub raw links from inside the guest:
