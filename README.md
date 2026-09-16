@@ -5,6 +5,8 @@ curl -fsSL https://raw.githubusercontent.com/chubbyhippo/virtualbox-fedora/refs/
 
 If the above `curl` fails with an SSL/certificate error, your host likely runs Zscaler — see [Zscaler SSL on the host](#zscaler-ssl-on-the-host-optional) below before retrying.
 
+`init.sh` also runs [`init-el-extras.sh`](init-el-extras.sh), which installs the language servers and debuggers (clangd, gdb, lldb-dap, pylsp, debugpy, clojure-lsp, Guile/Chez, ElixirLS, erlang_ls, gopls, delve, jdtls, rust-analyzer, typescript-language-server, vscode-js-debug, GnuCOBOL) used by the optional per-language `extras/*.el` layers of a companion Emacs config — see the comments at the top of that script for the runtimes it expects from `mise.toml` and what it deliberately leaves out (Haskell, SuperBOL).
+
 
 ## Connecting to the SSH server
 
