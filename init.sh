@@ -44,6 +44,10 @@ rpm -q jet-brains-mono-nerd-fonts >/dev/null 2>&1 || {
     sudo dnf install -y jet-brains-mono-nerd-fonts
 }
 
+sudo dnf install -y "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm"
+sudo dnf install -y virtualbox-guest-additions
+sudo systemctl enable --now vboxservice
+
 if getent group vboxsf >/dev/null && ! id -nG "$USER" | grep -qw vboxsf; then
     sudo usermod -aG vboxsf "$USER"
     echo "Added $USER to vboxsf group. Log out and back in (or reboot) to access shared folders."
